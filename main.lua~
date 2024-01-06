@@ -1,0 +1,746 @@
+-- Survival Game
+-- William Bradford
+-- 2016/01/02
+-- Love 0.8.0
+
+-- -----------------------------------------------------------------------------
+-- -----------------------------------------------------------------------------
+-- LOAD LOAD LOAD LOAD LOAD LOAD LOAD LOAD LOAD LOAD LOAD LOAD LOAD LOAD LOAD
+-- LOAD LOAD LOAD LOAD LOAD LOAD LOAD LOAD LOAD LOAD LOAD LOAD LOAD LOAD LOAD
+-- LOAD LOAD LOAD LOAD LOAD LOAD LOAD LOAD LOAD LOAD LOAD LOAD LOAD LOAD LOAD
+-- -----------------------------------------------------------------------------
+-- -----------------------------------------------------------------------------
+function love.load()
+
+  gamestate = 0 -- gamestate 0 = Loading
+  toggle_pause = false
+
+
+-- Music Test
+music1 = love.audio.newSource('assets/GoodExcuse.mp3')
+music2 = love.audio.newSource('assets/ScotlandShame.mp3')
+
+--  success = love.graphics.toggleFullscreen()
+
+-- -----------------------------------------------------------------------------
+-- Load Tiles for Map
+-- -----------------------------------------------------------------------------
+  tile = {}
+  for i=0,9 do -- change 3 to the number of tile images minus 1.
+  	tile[i] = love.graphics.newImage("assets/Tile_32_"..i..".png")
+  end
+-- -----------------------------------------------------------------------------
+
+
+
+-- -----------------------------------------------------------------------------
+-- Load Tiles for Trees/Rocks
+-- -----------------------------------------------------------------------------
+  tile_treerock = {}
+  for i=0,9 do
+    tile_treerock[i] = love.graphics.newImage("assets/Tile_treerock_32_"..i..".png")
+  end
+  
+-- -----------------------------------------------------------------------------
+
+
+
+-- -----------------------------------------------------------------------------
+-- Load Character Graphics - Start
+-- -----------------------------------------------------------------------------
+  u1 = love.graphics.newImage("assets/walk_up_1.png")
+  u2 = love.graphics.newImage("assets/walk_up_2.png")
+  u3 = love.graphics.newImage("assets/walk_up_3.png")
+  r1 = love.graphics.newImage("assets/walk_right_1.png")
+  r2 = love.graphics.newImage("assets/walk_right_2.png")
+  r3 = love.graphics.newImage("assets/walk_right_3.png")
+  d1 = love.graphics.newImage("assets/walk_down_1.png")
+  d2 = love.graphics.newImage("assets/walk_down_2.png")
+  d3 = love.graphics.newImage("assets/walk_down_3.png")
+  l1 = love.graphics.newImage("assets/walk_left_1.png")
+  l2 = love.graphics.newImage("assets/walk_left_2.png")
+  l3 = love.graphics.newImage("assets/walk_left_3.png")
+-- -----------------------------------------------------------------------------
+
+
+
+-- -----------------------------------------------------------------------------
+-- Misc Loading
+-- -----------------------------------------------------------------------------
+  player_dir = "down"
+  dir_change = 0
+  walk_step = 1
+-- -----------------------------------------------------------------------------
+
+-- -----------------------------------------------------------------------------
+-- Loading Coordinate Systen
+-- -----------------------------------------------------------------------------
+
+  -- Retrieve the Dimensions of the Desktop (Pixels)
+  Screen_Width, Screen_Height = love.window.getDesktopDimensions(1)
+  success = love.window.setFullscreen(true)
+
+  -- State Dimensions of Map Tiles (Pixels)
+  tile_w = 32
+  tile_h = 32
+
+  -- State Dimensions of World (Tiles)
+  map_w = 69
+  map_h = 69
+
+
+  -- Calculate how many Tiles to display at once
+  Tiles_in_y_view = math.floor(Screen_Height/tile_h)-2
+  Tiles_in_x_view = math.floor(Screen_Width/tile_w)-2
+  Space_in_y_view = Screen_Height-(Tiles_in_y_view*tile_w)
+  Space_in_x_view = Screen_Width-(Tiles_in_x_view*tile_h)
+  map_offset_y = Space_in_y_view/2
+  map_offset_x = Space_in_x_view/2
+
+
+  -- Starting Coordinates and Player Coordnates
+  map_x = 25
+  map_y = 25
+  player_in_mapx = map_x+math.floor(Tiles_in_x_view/2)
+  player_in_mapy = map_y+math.floor(Tiles_in_y_view/2)
+
+  -- Player Screen Position
+  player_pos_x = tile_w*(math.floor(Tiles_in_x_view/2))+map_offset_x
+  player_pos_y = tile_h*(math.floor(Tiles_in_y_view/2))+map_offset_y
+  -- -----------------------------------------------------------------------------
+
+
+
+-- -----------------------------------------------------------------------------
+-- Load Terrain
+-- -----------------------------------------------------------------------------
+  map_terrain={
+{9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9},
+{9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9},
+{9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9},
+{9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9},
+{9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9},
+{9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9},
+{9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9},
+{9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9},
+{9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9},
+{9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9},
+{9,9,9,9,9,9,9,9,9,9,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,9,9,9,9,9,9,9,9,9,9},
+{9,9,9,9,9,9,9,9,9,9,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,9,9,9,9,9,9,9,9,9,9},
+{9,9,9,9,9,9,9,9,9,9,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,9,9,9,9,9,9,9,9,9,9},
+{9,9,9,9,9,9,9,9,9,9,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,9,9,9,9,9,9,9,9,9,9},
+{9,9,9,9,9,9,9,9,9,9,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,9,9,9,9,9,9,9,9,9,9},
+{9,9,9,9,9,9,9,9,9,9,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,9,9,9,9,9,9,9,9,9,9},
+{9,9,9,9,9,9,9,9,9,9,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,9,9,9,9,9,9,9,9,9,9},
+{9,9,9,9,9,9,9,9,9,9,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,9,9,9,9,9,9,9,9,9,9},
+{9,9,9,9,9,9,9,9,9,9,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,9,9,9,9,9,9,9,9,9,9},
+{9,9,9,9,9,9,9,9,9,9,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,9,9,9,9,9,9,9,9,9,9},
+{9,9,9,9,9,9,9,9,9,9,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,9,9,9,9,9,9,9,9,9,9},
+{9,9,9,9,9,9,9,9,9,9,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1,1,1,1,1,1,1,1,1,0,0,0,0,9,9,9,9,9,9,9,9,9,9},
+{9,9,9,9,9,9,9,9,9,9,0,0,0,0,0,0,1,1,1,1,1,1,1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1,1,1,1,1,1,1,1,0,0,0,9,9,9,9,9,9,9,9,9,9},
+{9,9,9,9,9,9,9,9,9,9,0,0,0,0,0,1,1,1,1,1,1,1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1,1,1,1,1,1,1,0,0,0,9,9,9,9,9,9,9,9,9,9},
+{9,9,9,9,9,9,9,9,9,9,0,0,0,0,0,1,1,1,1,1,1,1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1,1,1,1,1,1,1,0,0,0,9,9,9,9,9,9,9,9,9,9},
+{9,9,9,9,9,9,9,9,9,9,0,0,0,0,0,1,1,1,1,1,1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1,1,1,1,1,1,0,0,0,9,9,9,9,9,9,9,9,9,9},
+{9,9,9,9,9,9,9,9,9,9,0,0,0,0,0,1,1,1,1,1,1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1,1,1,1,1,1,0,0,0,9,9,9,9,9,9,9,9,9,9},
+{9,9,9,9,9,9,9,9,9,9,0,0,0,0,0,1,1,1,1,1,1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1,1,1,1,1,1,0,0,0,9,9,9,9,9,9,9,9,9,9},
+{9,9,9,9,9,9,9,9,9,9,0,0,0,0,0,1,1,1,1,1,1,2,2,2,2,2,2,2,2,2,2,2,2,4,4,4,4,4,2,2,2,2,2,2,2,2,2,2,2,2,1,1,1,1,1,1,0,0,0,9,9,9,9,9,9,9,9,9,9},
+{9,9,9,9,9,9,9,9,9,9,0,0,0,0,0,1,1,1,1,1,1,2,2,2,2,2,2,2,2,2,2,4,4,4,4,4,4,4,4,4,2,2,2,2,2,2,2,2,2,2,1,1,1,1,1,1,0,0,0,9,9,9,9,9,9,9,9,9,9},
+{9,9,9,9,9,9,9,9,9,9,0,0,0,0,0,1,1,1,1,1,1,2,2,2,2,2,2,2,2,2,4,4,4,4,4,4,4,4,4,4,4,2,2,2,2,2,2,2,2,2,1,1,1,1,1,1,0,0,0,9,9,9,9,9,9,9,9,9,9},
+{9,9,9,9,9,9,9,9,9,9,0,0,0,0,0,1,1,1,1,1,1,2,2,2,2,2,2,2,2,2,4,4,4,4,4,4,4,4,4,4,4,2,2,2,2,2,2,2,2,2,1,1,1,1,1,1,0,0,0,9,9,9,9,9,9,9,9,9,9},
+{9,9,9,9,9,9,9,9,9,9,0,0,0,0,0,1,1,1,1,1,1,2,2,2,2,2,2,2,2,4,4,4,4,4,4,4,4,4,4,4,4,4,2,2,2,2,2,2,2,2,1,1,1,1,1,1,0,0,0,9,9,9,9,9,9,9,9,9,9},
+{9,9,9,9,9,9,9,9,9,9,0,0,0,0,0,1,1,1,1,1,1,2,2,2,2,2,2,2,2,4,4,4,4,4,4,4,4,4,4,4,4,4,2,2,2,2,2,2,2,2,1,1,1,1,1,1,0,0,0,9,9,9,9,9,9,9,9,9,9},
+{9,9,9,9,9,9,9,9,9,9,0,0,0,0,0,1,1,1,1,1,1,2,2,2,2,2,2,2,2,4,4,4,4,4,4,4,4,4,4,4,4,4,2,2,2,2,2,2,2,2,1,1,1,1,1,1,0,0,0,9,9,9,9,9,9,9,9,9,9},
+{9,9,9,9,9,9,9,9,9,9,0,0,0,0,0,1,1,1,1,1,1,2,2,2,2,2,2,2,2,4,4,4,4,4,4,4,4,4,4,4,4,4,2,2,2,2,2,2,2,2,1,1,1,1,1,1,0,0,0,9,9,9,9,9,9,9,9,9,9},
+{9,9,9,9,9,9,9,9,9,9,0,0,0,0,0,1,1,1,1,1,1,2,2,2,2,2,2,2,2,4,4,4,4,4,4,4,4,4,4,4,4,4,2,2,2,2,2,2,2,2,1,1,1,1,1,1,0,0,0,9,9,9,9,9,9,9,9,9,9},
+{9,9,9,9,9,9,9,9,9,9,0,0,0,0,0,1,1,1,1,1,1,2,2,2,2,2,2,2,2,2,4,4,4,4,4,4,4,4,4,4,4,2,2,2,2,2,2,2,2,2,1,1,1,1,1,1,0,0,0,9,9,9,9,9,9,9,9,9,9},
+{9,9,9,9,9,9,9,9,9,9,0,0,0,0,0,1,1,1,1,1,1,2,2,2,2,2,2,2,2,2,4,4,4,4,4,4,4,4,4,4,4,2,2,2,2,2,2,2,2,2,1,1,1,1,1,1,0,0,0,9,9,9,9,9,9,9,9,9,9},
+{9,9,9,9,9,9,9,9,9,9,0,0,0,0,0,1,1,1,1,1,1,2,2,2,2,2,2,2,2,2,2,4,4,4,4,4,4,4,4,4,2,2,2,2,2,2,2,2,2,2,1,1,1,1,1,1,0,0,0,9,9,9,9,9,9,9,9,9,9},
+{9,9,9,9,9,9,9,9,9,9,0,0,0,0,0,1,1,1,1,1,1,2,2,2,2,2,2,2,2,2,2,2,2,4,4,4,4,4,2,2,2,2,2,2,2,2,2,2,2,2,1,1,1,1,1,1,0,0,0,9,9,9,9,9,9,9,9,9,9},
+{9,9,9,9,9,9,9,9,9,9,0,0,0,0,0,1,1,1,1,1,1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1,1,1,1,1,1,0,0,0,9,9,9,9,9,9,9,9,9,9},
+{9,9,9,9,9,9,9,9,9,9,0,0,0,0,0,1,1,1,1,1,1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1,1,1,1,1,1,0,0,0,9,9,9,9,9,9,9,9,9,9},
+{9,9,9,9,9,9,9,9,9,9,0,0,0,0,0,1,1,1,1,1,1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1,1,1,1,1,1,0,0,0,9,9,9,9,9,9,9,9,9,9},
+{9,9,9,9,9,9,9,9,9,9,0,0,0,0,0,1,1,1,1,1,1,1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1,1,1,1,1,1,1,0,0,0,9,9,9,9,9,9,9,9,9,9},
+{9,9,9,9,9,9,9,9,9,9,0,0,0,0,0,1,1,1,1,1,1,1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1,1,1,1,1,1,1,0,0,0,9,9,9,9,9,9,9,9,9,9},
+{9,9,9,9,9,9,9,9,9,9,0,0,0,0,0,1,1,1,1,1,1,1,1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1,1,1,1,1,1,1,1,0,0,0,9,9,9,9,9,9,9,9,9,9},
+{9,9,9,9,9,9,9,9,9,9,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1,1,1,1,1,1,1,1,1,0,0,0,0,9,9,9,9,9,9,9,9,9,9},
+{9,9,9,9,9,9,9,9,9,9,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,9,9,9,9,9,9,9,9,9,9},
+{9,9,9,9,9,9,9,9,9,9,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,9,9,9,9,9,9,9,9,9,9},
+{9,9,9,9,9,9,9,9,9,9,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,9,9,9,9,9,9,9,9,9,9},
+{9,9,9,9,9,9,9,9,9,9,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,9,9,9,9,9,9,9,9,9,9},
+{9,9,9,9,9,9,9,9,9,9,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,9,9,9,9,9,9,9,9,9,9},
+{9,9,9,9,9,9,9,9,9,9,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,9,9,9,9,9,9,9,9,9,9},
+{9,9,9,9,9,9,9,9,9,9,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,9,9,9,9,9,9,9,9,9,9},
+{9,9,9,9,9,9,9,9,9,9,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,9,9,9,9,9,9,9,9,9,9},
+{9,9,9,9,9,9,9,9,9,9,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,9,9,9,9,9,9,9,9,9,9},
+{9,9,9,9,9,9,9,9,9,9,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,9,9,9,9,9,9,9,9,9,9},
+{9,9,9,9,9,9,9,9,9,9,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,9,9,9,9,9,9,9,9,9,9},
+{9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9},
+{9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9},
+{9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9},
+{9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9},
+{9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9},
+{9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9},
+{9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9},
+{9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9},
+{9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9},
+{9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9}
+}
+-- -----------------------------------------------------------------------------
+
+
+
+-- -----------------------------------------------------------------------------
+-- Load Trees and Rocks
+-- -----------------------------------------------------------------------------
+map_tree ={
+{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,6,0,0,0,0,0,0,0,0,0,0,0,0,6,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,6,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,6,0,0,0,0,0,0,0,0,0,0,0,0,0},
+{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+{0,0,0,0,0,0,0,0,0,6,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,6,0,0,0,0,0,0,0,0},
+{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,6,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,6,0,0,0,0,0,0,0,0,0,0},
+{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,6,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+{0,0,0,0,0,0,6,0,4,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,6,0,0,6,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+{0,0,0,0,0,0,0,0,0,0,4,1,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+{0,0,0,0,0,0,0,0,4,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+{0,0,0,0,0,0,4,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,4,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+{0,0,0,0,0,0,0,4,0,0,6,0,0,0,0,0,0,0,0,0,0,0,6,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+{0,0,0,0,0,0,0,0,4,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,6,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+{0,0,0,0,0,0,0,0,4,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,6,0,0,6,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+{0,0,0,0,0,0,0,0,4,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,4,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+{0,0,0,0,0,0,0,0,0,4,0,0,0,0,0,0,0,0,0,6,0,0,0,0,0,0,0,0,6,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+{0,0,0,0,0,0,0,0,4,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+{0,0,0,0,0,0,0,0,4,6,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,6,0,0,0,0,0,0,0,0,0},
+{0,0,0,0,0,0,0,0,0,0,0,4,0,1,0,0,0,0,0,2,0,2,0,6,6,4,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,0,0,0,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+{0,0,0,0,0,0,0,0,0,0,0,0,0,0,6,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,6,0,0,0,0,0,0,0,0,0,0},
+{0,0,0,0,0,0,0,0,0,0,0,0,4,0,0,0,0,0,0,0,2,0,0,0,0,0,2,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+{0,0,0,0,0,0,0,0,0,0,0,0,4,0,0,0,0,0,1,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+{0,0,0,0,0,0,0,0,0,0,0,0,0,4,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+{0,0,0,0,0,0,0,0,0,0,0,0,4,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,6,0,0,0,0,0,0,0,0,0,0,0,0},
+{0,0,0,0,0,0,0,0,0,0,0,0,0,4,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,6,0,0,0,0,0,0,0},
+{0,0,0,0,0,0,0,0,0,0,0,0,4,0,0,0,6,0,0,1,0,0,0,0,0,0,0,0,6,0,0,0,0,0,6,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+{0,0,0,0,0,0,0,6,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,6,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+{0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0},
+{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+{0,0,0,0,0,0,0,0,0,0,0,0,6,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0},
+{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}
+}
+-- -----------------------------------------------------------------------------
+
+-- -----------------------------------------------------------------------------
+-- Player Setup
+-- -----------------------------------------------------------------------------
+  player_health_max = 100
+  player_health = player_health_max
+  player_energy_max = 100
+  player_energy = player_energy_max
+  player_hunger_max = 100
+  player_hunger = player_hunger_max
+  player_thirst_max = 100
+  player_thirst = player_thirst_max 
+  player_sanity_max = 100
+  player_sanity = player_sanity_max
+
+  player_carry_max = 100
+  player_carry = 25
+
+  default_step_energy_depletion = 1
+  default_step_hunger_depletion = 0.1
+  default_step_thirst_depletion = 0.2
+  default_step_collision_health_depletion = 1
+  default_step_collision_energy_depletion = 0.2
+-- -----------------------------------------------------------------------------
+
+
+  gamestate = 42 -- gamestate 42 = play mode
+
+  music1:play()
+
+end
+
+-- -----------------------------------------------------------------------------
+-- -----------------------------------------------------------------------------
+-- LOAD LOAD LOAD LOAD LOAD LOAD LOAD LOAD LOAD LOAD LOAD LOAD LOAD LOAD LOAD
+-- LOAD LOAD LOAD LOAD LOAD LOAD LOAD LOAD LOAD LOAD LOAD LOAD LOAD LOAD LOAD
+-- LOAD LOAD LOAD LOAD LOAD LOAD LOAD LOAD LOAD LOAD LOAD LOAD LOAD LOAD LOAD
+-- -----------------------------------------------------------------------------
+-- -----------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+-- -----------------------------------------------------------------------------
+-- -----------------------------------------------------------------------------
+-- UPDATE UPDATE UPDATE UPDATE UPDATE UPDATE UPDATE UPDATE UPDATE UPDATE UPDATE
+-- UPDATE UPDATE UPDATE UPDATE UPDATE UPDATE UPDATE UPDATE UPDATE UPDATE UPDATE
+-- UPDATE UPDATE UPDATE UPDATE UPDATE UPDATE UPDATE UPDATE UPDATE UPDATE UPDATE
+-- -----------------------------------------------------------------------------
+-- -----------------------------------------------------------------------------
+function love.update(dt)
+
+  if player_sanity > 0 then
+    player_sanity = player_sanity - 0.01
+  end 
+  
+  if player_health < 1 then player_health = 1 end
+  if player_energy < 1 then player_energy = 1 end
+  if player_hunger < 1 then player_hunger = 1 end
+  if player_thirst < 1 then player_thirst = 1 end
+  if player_sanity < 1 then player_sanity = 1 end
+
+  -- Quick Escape Key
+  --if love.keyboard.isDown("escape") then love.event.push("quit") end -- Escape Button Pressed
+  
+  if love.keyboard.isDown("delete") then love.event.push("quit") end -- Secondary Escape Button Pressed
+  
+  if gamestate == 42 then
+      
+    if love.keyboard.isDown("up") then  -- Up Button Pressed  
+      if map_tree[player_in_mapy-2][player_in_mapx] == 0 then 
+        map_y = map_y-1 
+        update_player_pos(map_x,map_y)
+        travel_dir = 1
+        collision = 0
+        step_update_HEHTS(player_in_mapx, player_in_mapy, travel_dir, collision)
+      else
+        collision = 1
+        step_update_HEHTS(player_in_mapx, player_in_mapy, travel_dir, collision)
+      end
+  
+    	if map_y < 0 then map_y = 0; end  
+  
+  	  if player_dir == "up" then
+        dir_change = 0
+        walk_step = math.mod(walk_step + 1,4)
+      else
+        dir_change = 1
+        walk_step = 1
+        player_dir = "up"
+      end
+    end -- Up Button Pressed
+    
+    if love.keyboard.isDown("right") then -- Right Button Pressed
+      if map_tree[player_in_mapy-1][player_in_mapx+1] == 0 then
+        map_x = math.min(map_x+1,map_w-Tiles_in_x_view)  
+        update_player_pos(map_x,map_y)
+        travel_dir = 2
+        collision = 0
+        step_update_HEHTS(player_in_mapx, player_in_mapy, travel_dir, collision)
+      else 
+        collision = 1
+        step_update_HEHTS(player_in_mapx, player_in_mapy, travel_dir, collision)
+      end
+  
+      if player_dir == "right" then
+        dir_change = 0
+        walk_step = math.mod(walk_step + 1,4)
+      else
+        dir_change = 1
+        walk_step = 1
+        player_dir = "right"
+      end
+    end -- Right Button Pressed
+  
+    if love.keyboard.isDown("down") then -- Down Button Pressed
+      if map_tree[player_in_mapy][player_in_mapx] == 0 then
+        map_y = map_y+1
+        update_player_pos(map_x,map_y)
+        travel_dir = 3
+        collision = 0
+        step_update_HEHTS(player_in_mapx, player_in_mapy, travel_dir, collision)
+      else
+        collision = 1
+        step_update_HEHTS(player_in_mapx, player_in_mapy, travel_dir, collision)
+      end
+  
+      if map_y > map_h-Tiles_in_y_view then map_y = map_h-Tiles_in_y_view; end  
+  
+      if player_dir == "down" then
+        dir_change = 0
+        walk_step = math.mod(walk_step + 1,4)
+      else
+        dir_change = 1
+        walk_step = 1
+        player_dir = "down"
+      end
+    end -- Down Button Pressed
+  
+    if love.keyboard.isDown("left") then -- Left Button Pressed
+      if map_tree[player_in_mapy-1][player_in_mapx-1] == 0 then
+        map_x = math.max(map_x-1,0)
+        update_player_pos(map_x,map_y)
+        travel_dir = 4
+        collision = 0
+        step_update_HEHTS(player_in_mapx, player_in_mapy, travel_dir, collision)
+      else
+        collision = 1
+        step_update_HEHTS(player_in_mapx, player_in_mapy, travel_dir, collision)
+      end
+  
+      if player_dir == "left" then
+        dir_change = 0
+        walk_step = math.mod(walk_step + 1,4)
+      else
+        dir_change = 1
+        walk_step = 1
+        player_dir = "left"
+      end
+    end -- Left Button Pressed
+
+
+    if love.keyboard.isDown("up") == false then
+        if love.keyboard.isDown("left") == false then
+            if love.keyboard.isDown("down") == false then
+                if love.keyboard.isDown("right") == false then
+                    if player_health < player_health_max then
+                        player_health = player_health + 0.5
+                            if player_health > player_health_max then player_health = player_health_max end
+                    end
+                    if player_energy < player_energy_max then
+                        player_energy = player_energy + 0.5
+                            if player_energy > player_energy_max then player_energy = player_energy_max end
+                    end
+                    if player_hunger < player_hunger_max then
+                        player_hunger = player_hunger + 0.075
+                            if player_hunger > player_hunger_max then player_hunger = player_hunger_max end
+                    end
+                    if player_thirst < player_thirst_max then
+                        player_thirst = player_thirst + 0.06
+                            if player_thirst > player_thirst_max then player_thirst = player_thirst_max end
+                    end 
+                end
+            end
+        end
+    end
+    
+  
+  end -- Gamestate 42
+
+  
+  toggle_pause = love.keyboard.isDown("escape")
+  if toggle_pause then
+    if gamestate == 42 then
+      toggle_pause = false
+      gamestate = 11
+      if love.keyboard.isDown("delete") then love.event.push("quit") end -- Secondary Escape Button Pressed
+    end
+    if gamestate == 11 then
+      toggle_pause = false
+      gamestate = 42
+      if love.keyboard.isDown("delete") then love.event.push("quit") end -- Secondary Escape Button Pressed
+    end
+  end
+
+
+  
+  
+  if gamestate == 42 then
+    toggle_pause = love.keyboard.isDown("escape")
+    if toggle_pause then 
+      toggle_pause = false
+      gamestate = 11 
+    end
+  end
+
+  
+  
+  if gamestate == 42 then
+    if love.keyboard.isDown("e") then 
+        gamestate = 43 
+        state_42_type_index = 1
+    end
+  end
+  
+
+  
+  if gamestate == 43 then
+    if love.keyboard.isDown("return") then gamestate = 42 end
+    
+    
+    
+  end
+
+  
+end
+-- -----------------------------------------------------------------------------
+-- -----------------------------------------------------------------------------
+-- UPDATE UPDATE UPDATE UPDATE UPDATE UPDATE UPDATE UPDATE UPDATE UPDATE UPDATE
+-- UPDATE UPDATE UPDATE UPDATE UPDATE UPDATE UPDATE UPDATE UPDATE UPDATE UPDATE
+-- UPDATE UPDATE UPDATE UPDATE UPDATE UPDATE UPDATE UPDATE UPDATE UPDATE UPDATE
+-- -----------------------------------------------------------------------------
+-- -----------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+-- -----------------------------------------------------------------------------
+-- -----------------------------------------------------------------------------
+-- DRAW DRAW DRAW DRAW DRAW DRAW DRAW DRAW DRAW DRAW DRAW DRAW DRAW DRAW DRAW 
+-- DRAW DRAW DRAW DRAW DRAW DRAW DRAW DRAW DRAW DRAW DRAW DRAW DRAW DRAW DRAW 
+-- DRAW DRAW DRAW DRAW DRAW DRAW DRAW DRAW DRAW DRAW DRAW DRAW DRAW DRAW DRAW 
+-- -----------------------------------------------------------------------------
+-- -----------------------------------------------------------------------------
+function love.draw()
+
+
+  if gamestate == 42 or gamestate == 43 then
+    -- Draw Terrain First
+    draw_terrain()
+  
+    -- Draw Trees and Rocks Second
+    draw_treesrocks()
+  
+  
+  
+    -- Draw Player Here
+    if player_dir == "down" then
+      if     walk_step == 0 then love.graphics.draw(d1,player_pos_x,player_pos_y,0,1,1)
+      elseif walk_step == 1 then love.graphics.draw(d2,player_pos_x,player_pos_y,0,1,1)
+      elseif walk_step == 2 then love.graphics.draw(d3,player_pos_x,player_pos_y,0,1,1)
+      elseif walk_step == 3 then love.graphics.draw(d2,player_pos_x,player_pos_y,0,1,1)
+      end
+  	elseif player_dir == "up" then
+      if     walk_step == 0 then love.graphics.draw(u1,player_pos_x,player_pos_y,0,1,1)
+      elseif walk_step == 1 then love.graphics.draw(u2,player_pos_x,player_pos_y,0,1,1)
+      elseif walk_step == 2 then love.graphics.draw(u3,player_pos_x,player_pos_y,0,1,1)
+      elseif walk_step == 3 then love.graphics.draw(u2,player_pos_x,player_pos_y,0,1,1)
+      end
+  	elseif player_dir == "right" then
+      if     walk_step == 0 then love.graphics.draw(r1,player_pos_x,player_pos_y,0,1,1)
+      elseif walk_step == 1 then love.graphics.draw(r2,player_pos_x,player_pos_y,0,1,1)
+      elseif walk_step == 2 then love.graphics.draw(r3,player_pos_x,player_pos_y,0,1,1)
+      elseif walk_step == 3 then love.graphics.draw(r2,player_pos_x,player_pos_y,0,1,1)
+      end
+  	elseif player_dir == "left" then
+      if     walk_step == 0 then love.graphics.draw(l1,player_pos_x,player_pos_y,0,1,1)
+      elseif walk_step == 1 then love.graphics.draw(l2,player_pos_x,player_pos_y,0,1,1)
+      elseif walk_step == 2 then love.graphics.draw(l3,player_pos_x,player_pos_y,0,1,1)
+      elseif walk_step == 3 then love.graphics.draw(l2,player_pos_x,player_pos_y,0,1,1)
+      end
+    end
+  
+    love.graphics.print(Screen_Width,10,10)
+    love.graphics.print(Screen_Height,10,30)
+    love.graphics.print('Pixels,',50,10)
+    love.graphics.print('Pixels,',50,30)
+    love.graphics.print(Tiles_in_x_view,100,10)
+    love.graphics.print(Tiles_in_y_view,100,30)
+    love.graphics.print('Tiles in x', 120,10)
+    love.graphics.print('Tiles in y', 120, 30)
+  
+    love.graphics.print('Player in tile',10,50)
+    love.graphics.print(player_in_mapx,90,50)
+    love.graphics.print(player_in_mapy,110,50) 
+    
+  --  love.graphics.setColor(255,0,0)
+  --  love.graphics.rectangle('fill',Screen_Width/2-16,Screen_Height/2-16, 32,32)
+  --  love.graphics.setColor(0,0,255)
+  --  love.graphics.rectangle('fill',tile_w*(math.floor(Tiles_in_x_view/2))+map_offset_x,tile_h*(math.floor(Tiles_in_y_view/2))+map_offset_y,32,32)
+
+    health_ind_len_x = 0.100
+    health_ind_len_y = 0.025
+    health_ind_pos_x = 0.850
+    health_ind_pos_y = 0.100
+    energy_ind_pos_x = health_ind_pos_x
+    energy_ind_pos_y = health_ind_pos_y + health_ind_len_y
+    hunger_ind_pos_x = health_ind_pos_x
+    hunger_ind_pos_y = energy_ind_pos_y + health_ind_len_y
+    thirst_ind_pos_x = health_ind_pos_x
+    thirst_ind_pos_y = hunger_ind_pos_y + health_ind_len_y
+    sanity_ind_pos_x = health_ind_pos_x
+    sanity_ind_pos_y = thirst_ind_pos_y + health_ind_len_y
+
+    carry_ind_len_x = health_ind_len_y*Screen_Height/Screen_Width
+    carry_ind_len_y = -5*health_ind_len_y
+    carry_ind_pos_x = health_ind_pos_x + health_ind_len_x
+    carry_ind_pos_y = sanity_ind_pos_y + health_ind_len_y
+
+ 
+-- Health Bar
+    love.graphics.setColor(0,0,0)
+    love.graphics.rectangle('fill', health_ind_pos_x*Screen_Width, health_ind_pos_y*Screen_Height, health_ind_len_x*Screen_Width,health_ind_len_y*Screen_Height)
+    love.graphics.setColor(255,0,0)
+    love.graphics.rectangle('fill', health_ind_pos_x*Screen_Width, health_ind_pos_y*Screen_Height, (player_health/player_health_max)*health_ind_len_x*Screen_Width, health_ind_len_y*Screen_Height)
+    love.graphics.setColor(255,255,255)
+-- Health Bar
+
+-- Energy Bar
+    love.graphics.setColor(0,0,0)
+    love.graphics.rectangle('fill', energy_ind_pos_x*Screen_Width, energy_ind_pos_y*Screen_Height, health_ind_len_x*Screen_Width,health_ind_len_y*Screen_Height)
+    love.graphics.setColor(255,255,0)
+    love.graphics.rectangle('fill', energy_ind_pos_x*Screen_Width, energy_ind_pos_y*Screen_Height, (player_energy/player_energy_max)*health_ind_len_x*Screen_Width, health_ind_len_y*Screen_Height)
+    love.graphics.setColor(255,255,255)
+-- Energy Bar
+
+-- Hunger Bar
+    love.graphics.setColor(0,0,0)
+    love.graphics.rectangle('fill', hunger_ind_pos_x*Screen_Width, hunger_ind_pos_y*Screen_Height, health_ind_len_x*Screen_Width,health_ind_len_y*Screen_Height)
+    love.graphics.setColor(0,255,0)
+    love.graphics.rectangle('fill', hunger_ind_pos_x*Screen_Width, hunger_ind_pos_y*Screen_Height, (player_hunger/player_hunger_max)*health_ind_len_x*Screen_Width, health_ind_len_y*Screen_Height)
+    love.graphics.setColor(255,255,255)
+-- Hunger Bar
+
+-- Thirst Bar
+    love.graphics.setColor(0,0,0)
+    love.graphics.rectangle('fill', thirst_ind_pos_x*Screen_Width, thirst_ind_pos_y*Screen_Height, health_ind_len_x*Screen_Width,health_ind_len_y*Screen_Height)
+    love.graphics.setColor(0,0,255)
+    love.graphics.rectangle('fill', thirst_ind_pos_x*Screen_Width, thirst_ind_pos_y*Screen_Height, (player_thirst/player_thirst_max)*health_ind_len_x*Screen_Width, health_ind_len_y*Screen_Height)
+    love.graphics.setColor(255,255,255)
+-- Thirst Bar
+
+-- Sanity Bar
+    love.graphics.setColor(0,0,0)
+    love.graphics.rectangle('fill', sanity_ind_pos_x*Screen_Width, sanity_ind_pos_y*Screen_Height, health_ind_len_x*Screen_Width,health_ind_len_y*Screen_Height)
+    love.graphics.setColor(255,255,255)
+    love.graphics.rectangle('fill', sanity_ind_pos_x*Screen_Width, sanity_ind_pos_y*Screen_Height, (player_sanity/player_sanity_max)*health_ind_len_x*Screen_Width, health_ind_len_y*Screen_Height)
+    love.graphics.setColor(255,255,255)
+-- Sanity Bar
+
+-- Carry Bar
+    love.graphics.setColor(0,0,0)
+    love.graphics.rectangle('fill', carry_ind_pos_x*Screen_Width, carry_ind_pos_y*Screen_Height, carry_ind_len_x*Screen_Width,carry_ind_len_y*Screen_Height)
+    love.graphics.setColor(0,255,255)
+    love.graphics.rectangle('fill', carry_ind_pos_x*Screen_Width, carry_ind_pos_y*Screen_Height, carry_ind_len_x*Screen_Width, -(player_carry/player_carry_max)*health_ind_len_y*Screen_Height)
+    love.graphics.setColor(255,255,255)
+-- Carry Bar
+
+    if gamestate == 43 then
+      love.graphics.rectangle('fill',player_pos_x+tile_w, player_pos_y+tile_h,health_ind_len_x*Screen_Width, health_ind_len_y*Screen_Height)
+    end
+
+  end -- gamestate 42 or 43
+
+  if gamestate == 11 then
+
+    love.graphics.setBackgroundColor(0,0,0)
+    love.graphics.print('Pause',100,100)
+
+  end 
+
+  love.graphics.print("Gamestate:"..gamestate,512,10)
+
+end
+-- -----------------------------------------------------------------------------
+-- -----------------------------------------------------------------------------
+-- DRAW DRAW DRAW DRAW DRAW DRAW DRAW DRAW DRAW DRAW DRAW DRAW DRAW DRAW DRAW 
+-- DRAW DRAW DRAW DRAW DRAW DRAW DRAW DRAW DRAW DRAW DRAW DRAW DRAW DRAW DRAW 
+-- DRAW DRAW DRAW DRAW DRAW DRAW DRAW DRAW DRAW DRAW DRAW DRAW DRAW DRAW DRAW 
+-- -----------------------------------------------------------------------------
+-- -----------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+-- -----------------------------------------------------------------------------
+-- -----------------------------------------------------------------------------
+-- ADDITIONAL FUNCTIONS ADDITIONAL FUNCTIONS ADDITIONAL FUNCTIONS ADDITIONAL FUN
+-- ADDITIONAL FUNCTIONS ADDITIONAL FUNCTIONS ADDITIONAL FUNCTIONS ADDITIONAL FUN
+-- ADDITIONAL FUNCTIONS ADDITIONAL FUNCTIONS ADDITIONAL FUNCTIONS ADDITIONAL FUN
+-- -----------------------------------------------------------------------------
+-- -----------------------------------------------------------------------------
+
+-- this function places the tiles following the tilemap
+function draw_terrain()
+  for y=1,Tiles_in_y_view do
+    for x=1,Tiles_in_x_view do
+      love.graphics.draw( 
+      tile[map_terrain[y+map_y][x+map_x]], 
+      ((x-1)*tile_w)+map_offset_x, 
+      ((y-1)*tile_h)+map_offset_y)
+    end
+  end
+end
+
+
+
+-- This function places trees, rocks et. from the tree tilemap
+function draw_treesrocks()
+  for y=1,Tiles_in_y_view do
+    for x=1,Tiles_in_x_view do
+      tree_comp = 0
+      if map_tree[y+map_y][x+map_x] == 1 then 
+        tree_comp = -32
+      end
+      if map_tree[y+map_y][x_map_x] == 6 then
+        tree_comp = -32
+      end
+      love.graphics.draw( 
+      tile_treerock[map_tree[y+map_y][x+map_x]], 
+      ((x-1)*tile_w)+map_offset_x, 
+      ((y-1)*tile_h)+map_offset_y+tree_comp )
+    end
+  end
+end
+
+function update_player_pos(update_player_pos_a,update_player_pos_b)
+  player_in_mapx = update_player_pos_a+1+math.floor(Tiles_in_x_view/2)
+  player_in_mapy = update_player_pos_b+1+math.floor(Tiles_in_y_view/2)
+end
+
+  
+
+function step_update_HEHTS(step_update_hehts_pimx, step_update_pimy, step_update_tdir, step_update_col)
+  
+  if step_update_col == 0 then
+    player_energy = player_energy - default_step_energy_depletion
+    player_hunger = player_hunger - default_step_hunger_depletion
+    player_thirst = player_thirst - default_step_thirst_depletion
+  elseif step_update_col == 1 then
+    player_health = player_health - default_step_collision_health_depletion
+    player_energy = player_energy - default_step_collision_energy_depletion
+  end
+    
+  
+end
+
+
+
+
+-- -----------------------------------------------------------------------------
+-- -----------------------------------------------------------------------------
+-- ADDITIONAL FUNCTIONS ADDITIONAL FUNCTIONS ADDITIONAL FUNCTIONS ADDITIONAL FUN
+-- ADDITIONAL FUNCTIONS ADDITIONAL FUNCTIONS ADDITIONAL FUNCTIONS ADDITIONAL FUN
+-- ADDITIONAL FUNCTIONS ADDITIONAL FUNCTIONS ADDITIONAL FUNCTIONS ADDITIONAL FUN
+-- -----------------------------------------------------------------------------
+-- -----------------------------------------------------------------------------
